@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Script to compile and install a Linux kernel
+
+set -e  # Exit on error
+
+# Install dependencies
+echo "Installing required packages..."
+sudo apt update && sudo apt install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev
+
+# Download kernel source
+echo "Downloading Linux kernel source..."
+git clone --depth=1 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+cd linux || exit 1
+
+# Configure the kernel
+echo "Configuring the kernel..."
+cp /boot/config-$(uname -r) .config
+make oldconfig
+
+# Compile the kernel
+echo "Compiling the kernel... This may take some time."
+make -j$(nproc)
+
+# Install modules
+echo "Installing kernel modules..."
+sudo make modules_install
+
+# Install the kernel
+echo "Installing the kernel..."
+sudo make install
+
+# Update GRUB
+echo "Updating GRUB bootloader..."
+sudo update-grub
+
+# Reboot prompt
+echo "Kernel compilation complete. Reboot to use the new kernel? (y/n)"
+read -r REBOOT
+if [[ "$REBOOT" == "y" ]]; then
+    sudo reboot
+else
+    echo "Reboot manually to use the new kernel."
+fi
